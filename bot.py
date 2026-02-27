@@ -6,9 +6,9 @@ from pyrogram.errors import FloodWait
 from pyrogram.types import Message
 
 # 🔐 Heroku Config Vars
-API_ID = int(os.environ.get("24168862"))
-API_HASH = os.environ.get("916a9424dd1e58ab7955001ccc0172b3")
-BOT_TOKEN = os.environ.get("8740569127:AAHe4ajVBSE9fHvo-8asUiaLqBigvwIVsJg")
+API_ID = int(os.environ.get("API_ID"))
+API_HASH = os.environ.get("API_HASH")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
 app = Client(
     "UtagBot",
