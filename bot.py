@@ -1,13 +1,14 @@
 import asyncio
+import os
 from pyrogram import Client, filters
 from pyrogram.enums import ChatMemberStatus
 from pyrogram.errors import FloodWait
 from pyrogram.types import Message
 
-# 🔹 Yaha apni details daalo
-API_ID = 24168862
-API_HASH = "916a9424dd1e58ab7955001ccc0172b3"
-BOT_TOKEN = "8740569127:AAF8N60Y5Fn-o0M0oHUBOGQMSpAol1uIfRQ"
+# 🔐 Heroku Config Vars
+API_ID = int(os.environ.get("24168862"))
+API_HASH = os.environ.get("916a9424dd1e58ab7955001ccc0172b3")
+BOT_TOKEN = os.environ.get("8740569127:AAHe4ajVBSE9fHvo-8asUiaLqBigvwIVsJg")
 
 app = Client(
     "UtagBot",
@@ -22,13 +23,24 @@ spam_chats = set()
 @app.on_message(filters.command("utag") & filters.group)
 async def tag_all(client: Client, message: Message):
 
+    # 🔒 Admin Check
+    member = await client.get_chat_member(message.chat.id, message.from_user.id)
+    if member.status not in (
+        ChatMemberStatus.ADMINISTRATOR,
+        ChatMemberStatus.OWNER,
+    ):
+        return await message.reply("🚫 Only Admins Can Use This Command.")
+
     if message.chat.id in spam_chats:
-        return await message.reply("⚠️ Already running tagging.")
+        return await message.reply("⚠️ Tagging already running.")
+
+    # ✨ Custom Text After Command
+    custom_text = message.text.split(None, 1)[1] if len(message.command) > 1 else ""
 
     spam_chats.add(message.chat.id)
     total = 0
     count = 0
-    text = ""
+    users_text = ""
 
     try:
         async for member in client.get_chat_members(message.chat.id):
@@ -40,36 +52,40 @@ async def tag_all(client: Client, message: Message):
                 continue
 
             user = member.user
-            mention = f"[{user.first_name}](tg://user?id={user.id})"
-            text += f"➤ {mention}\n"
+            name = user.first_name.replace("[", "").replace("]", "")
+            mention = f"[{name}](tg://user?id={user.id})"
 
+            users_text += f"➤ {mention}\n"
             total += 1
             count += 1
 
             if count == 5:
                 try:
-                    await message.reply_text(f"{text}\n📢 Tagged: {total}")
+                    msg = f"{custom_text}\n\n{users_text}" if custom_text else users_text
+                    await message.reply_text(msg)
                 except FloodWait as e:
                     await asyncio.sleep(e.value)
 
                 await asyncio.sleep(2)
-                text = ""
+                users_text = ""
                 count = 0
 
-        if text:
-            await message.reply_text(f"{text}\n📢 Tagged: {total}")
+        # Remaining Users
+        if users_text:
+            msg = f"{custom_text}\n\n{users_text}" if custom_text else users_text
+            await message.reply_text(msg)
 
-        await message.reply(f"✅ Done! Total Users: {total}")
+        await message.reply(f"✅ Tagging Completed\n👥 Total Users: {total}")
 
     finally:
         spam_chats.discard(message.chat.id)
 
 
 @app.on_message(filters.command("cancel") & filters.group)
-async def cancel(client: Client, message: Message):
+async def cancel_tagging(client: Client, message: Message):
 
     if message.chat.id not in spam_chats:
-        return await message.reply("❌ Not running.")
+        return await message.reply("❌ No tagging running.")
 
     member = await client.get_chat_member(message.chat.id, message.from_user.id)
 
@@ -77,11 +93,11 @@ async def cancel(client: Client, message: Message):
         ChatMemberStatus.ADMINISTRATOR,
         ChatMemberStatus.OWNER,
     ):
-        return await message.reply("Only admins can cancel.")
+        return await message.reply("🚫 Only Admins Can Cancel.")
 
     spam_chats.discard(message.chat.id)
-    await message.reply("🚫 Tagging Cancelled.")
+    await message.reply("🚫 Tagging Cancelled Successfully.")
 
 
-print("Bot Started...")
+print("Bot Started Successfully ✅")
 app.run()
