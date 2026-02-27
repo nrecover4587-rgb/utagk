@@ -20,6 +20,20 @@ app = Client(
 spam_chats = set()
 
 
+# ===================== START COMMAND =====================
+
+@app.on_message(filters.command("start"))
+async def start_cmd(client: Client, message: Message):
+    await message.reply(
+        "👋 Hello!\n\n"
+        "I'm UTag Bot.\n\n"
+        "🔹 /utag hello → Tag all members with message\n"
+        "🔹 /cancel → Stop tagging (Admin Only)"
+    )
+
+
+# ===================== UTAG COMMAND =====================
+
 @app.on_message(filters.command("utag") & filters.group)
 async def tag_all(client: Client, message: Message):
 
@@ -34,7 +48,6 @@ async def tag_all(client: Client, message: Message):
     if message.chat.id in spam_chats:
         return await message.reply("⚠️ Tagging already running.")
 
-    # ✨ Custom Text After Command
     custom_text = message.text.split(None, 1)[1] if len(message.command) > 1 else ""
 
     spam_chats.add(message.chat.id)
@@ -70,7 +83,6 @@ async def tag_all(client: Client, message: Message):
                 users_text = ""
                 count = 0
 
-        # Remaining Users
         if users_text:
             msg = f"{custom_text}\n\n{users_text}" if custom_text else users_text
             await message.reply_text(msg)
@@ -80,6 +92,8 @@ async def tag_all(client: Client, message: Message):
     finally:
         spam_chats.discard(message.chat.id)
 
+
+# ===================== CANCEL COMMAND =====================
 
 @app.on_message(filters.command("cancel") & filters.group)
 async def cancel_tagging(client: Client, message: Message):
@@ -98,6 +112,8 @@ async def cancel_tagging(client: Client, message: Message):
     spam_chats.discard(message.chat.id)
     await message.reply("🚫 Tagging Cancelled Successfully.")
 
+
+# ===================== RUN BOT =====================
 
 print("Bot Started Successfully ✅")
 app.run()
