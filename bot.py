@@ -3,7 +3,7 @@ import os
 from pyrogram import Client, filters
 from pyrogram.enums import ChatMemberStatus
 from pyrogram.errors import FloodWait
-from pyrogram.types import Message
+from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
 # 🔐 Heroku Config Vars
 API_ID = int(os.environ.get("API_ID"))
@@ -17,18 +17,38 @@ app = Client(
     bot_token=BOT_TOKEN
 )
 
-spam_chats = set()
+spam_chats = {}
+
+# 🔥 CHANGE THESE LINKS
+OWNER = "https://t.me/your_username"
+SUPPORT = "https://t.me/your_support_group"
+UPDATES = "https://t.me/your_updates_channel"
 
 
 # ===================== START COMMAND =====================
 
 @app.on_message(filters.command("start"))
 async def start_cmd(client: Client, message: Message):
+
+    buttons = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("👑 Owner", url=OWNER),
+                InlineKeyboardButton("💬 Support", url=SUPPORT)
+            ],
+            [
+                InlineKeyboardButton("📢 Updates", url=UPDATES)
+            ]
+        ]
+    )
+
     await message.reply(
-        "👋 Hello!\n\n"
-        "I'm UTag Bot.\n\n"
-        "🔹 /utag hello → Tag all members with message\n"
-        "🔹 /cancel → Stop tagging (Admin Only)"
+        "👋 **Welcome to UTag Bot**\n\n"
+        "⚡ Fast & Powerful Tagging Bot\n\n"
+        "🔹 /utag hello → Tag all members\n"
+        "🔹 Use buttons to control tagging\n\n"
+        "🔥 Made with ❤️",
+        reply_markup=buttons
     )
 
 
@@ -37,7 +57,6 @@ async def start_cmd(client: Client, message: Message):
 @app.on_message(filters.command("utag") & filters.group)
 async def tag_all(client: Client, message: Message):
 
-    # 🔒 Admin Check
     member = await client.get_chat_member(message.chat.id, message.from_user.id)
     if member.status not in (
         ChatMemberStatus.ADMINISTRATOR,
@@ -50,7 +69,19 @@ async def tag_all(client: Client, message: Message):
 
     custom_text = message.text.split(None, 1)[1] if len(message.command) > 1 else ""
 
-    spam_chats.add(message.chat.id)
+    spam_chats[message.chat.id] = True
+
+    buttons = InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton("🛑 Stop Tagging", callback_data=f"stop_{message.chat.id}")]
+        ]
+    )
+
+    await message.reply(
+        "🚀 Tagging Started...\nUse button to stop.",
+        reply_markup=buttons
+    )
+
     total = 0
     count = 0
     users_text = ""
@@ -90,7 +121,24 @@ async def tag_all(client: Client, message: Message):
         await message.reply(f"✅ Tagging Completed\n👥 Total Users: {total}")
 
     finally:
-        spam_chats.discard(message.chat.id)
+        spam_chats.pop(message.chat.id, None)
+
+
+# ===================== CALLBACK BUTTON =====================
+
+@app.on_callback_query()
+async def callback_handler(client: Client, callback: CallbackQuery):
+
+    data = callback.data
+
+    if data.startswith("stop_"):
+        chat_id = int(data.split("_")[1])
+
+        if chat_id in spam_chats:
+            spam_chats.pop(chat_id, None)
+            await callback.message.edit_text("🛑 Tagging Stopped Successfully.")
+        else:
+            await callback.answer("❌ Already stopped", show_alert=True)
 
 
 # ===================== CANCEL COMMAND =====================
@@ -109,7 +157,7 @@ async def cancel_tagging(client: Client, message: Message):
     ):
         return await message.reply("🚫 Only Admins Can Cancel.")
 
-    spam_chats.discard(message.chat.id)
+    spam_chats.pop(message.chat.id, None)
     await message.reply("🚫 Tagging Cancelled Successfully.")
 
 
