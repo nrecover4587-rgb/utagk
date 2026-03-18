@@ -20,9 +20,9 @@ app = Client(
 spam_chats = {}
 
 # 🔥 CHANGE THESE LINKS
-OWNER = "https://t.me/your_username"
-SUPPORT = "https://t.me/your_support_group"
-UPDATES = "https://t.me/your_updates_channel"
+OWNER = "https://t.me/MrMental001"
+SUPPORT = "https://t.me/mentalchatting"
+UPDATES = "https://t.me/mistubots"
 
 
 # ===================== START COMMAND =====================
